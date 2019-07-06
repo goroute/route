@@ -864,7 +864,6 @@ func TestRouterGitHubAPI(t *testing.T) {
 	testRouterAPI(t, gitHubAPI)
 }
 
-// Issue #729
 func TestRouterParamAlias(t *testing.T) {
 	api := []*Route{
 		{http.MethodGet, "/users/:userID/following", ""},
@@ -874,7 +873,6 @@ func TestRouterParamAlias(t *testing.T) {
 	testRouterAPI(t, api)
 }
 
-// Issue #1052
 func TestRouterParamOrdering(t *testing.T) {
 	api := []*Route{
 		{http.MethodGet, "/:a/:b/:c/:id", ""},
@@ -896,7 +894,6 @@ func TestRouterParamOrdering(t *testing.T) {
 	testRouterAPI(t, api3)
 }
 
-// Issue #1139
 func TestRouterMixedParams(t *testing.T) {
 	api := []*Route{
 		{http.MethodGet, "/teacher/:tid/room/suggestions", ""},
