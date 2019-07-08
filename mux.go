@@ -1,39 +1,3 @@
-/*
-package route implements modern and productive Go HTTP framework.
-
-Example:
-
-  package main
-
-  import (
-    "net/http"
-
-    "github.com/goroute/route"
-    "github.com/goroute/route/mw"
-  )
-
-  // Handler
-  func hello(c mux.Context) error {
-    return c.String(http.StatusOK, "Hello, World!")
-  }
-
-  func main() {
-    // Mux instance
-    mux := route.NewMux()
-
-    // Middleware
-    mux.Use(mw.Logger())
-    mux.Use(mw.Recover())
-
-    // Routes
-    mux.GET("/", hello)
-
-    // Start server
-    mux.Logger().Fatal(http.ListenAndServe(":1323", n))
-  }
-
-Learn more at https://github.com/goroute/route
-*/
 package route
 
 import (

@@ -39,22 +39,24 @@ import (
     "log"
     "github.com/goroute/route"
 )
+
 type hello struct {
 	Title string
 }
+
 func main() {
 	mux := route.NewServeMux()
 	
 	mux.GET("/", func (ctx route.Context) error {
-        return ctx.JSON(http.StatusOK, &hello{Title:"Hello, World!"})
-    })
+	    return ctx.JSON(http.StatusOK, &hello{Title:"Hello, World!"})
+	})
 	
 	log.Fatal(http.ListenAndServe(":9000", mux))
 }
 
 ```
 
-And finally run it
+Run it
 
 ```
 go run main.go
