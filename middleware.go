@@ -5,6 +5,10 @@ import "net/http"
 type (
 	// MiddlewareFunc defines a function to process middleware.
 	MiddlewareFunc func(HandlerFunc) HandlerFunc
+
+	// Skipper defines a function to skip middleware. Returning true skips processing
+	// the middleware.
+	Skipper func(Context) bool
 )
 
 // WrapMiddleware wraps `func(http.Handler) http.Handler` into `mux.MiddlewareFunc`
