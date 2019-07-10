@@ -19,3 +19,8 @@ func WrapMiddleware(m func(http.Handler) http.Handler) MiddlewareFunc {
 		}
 	}
 }
+
+// DefaultSkipper returns false which processes the middleware.
+func DefaultSkipper(Context) bool {
+	return false
+}
