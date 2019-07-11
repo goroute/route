@@ -22,10 +22,10 @@ type (
 )
 
 const (
-	userJSON                    = `{"id":1,"name":"Jon Snow"}`
-	userForm                    = `id=1&name=Jon Snow`
-	invalidContent              = "invalid content"
-	userJSONInvalidType         = `{"id":"1","name":"Jon Snow"}`
+	userJSON            = `{"id":1,"name":"Jon Snow"}`
+	userForm            = `id=1&name=Jon Snow`
+	invalidContent      = "invalid content"
+	userJSONInvalidType = `{"id":"1","name":"Jon Snow"}`
 )
 
 const userJSONPretty = `{

@@ -1,3 +1,4 @@
+// Package route implements HTTP request miltiplexer.
 package route
 
 import (
