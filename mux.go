@@ -4,6 +4,7 @@ package route
 import (
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"net/url"
@@ -191,21 +192,21 @@ type options struct {
 // A Option sets options such as credentials, tls, etc.
 type Option func(*options)
 
-// WithBinder allows to override default mux binder
+// WithBinder allows to override default mux binder.
 func WithBinder(binder Binder) Option {
 	return func(o *options) {
 		o.binder = binder
 	}
 }
 
-// WithRenderer allows to register mux view renderer
+// WithRenderer allows to register mux view renderer.
 func WithRenderer(renderer Renderer) Option {
 	return func(o *options) {
 		o.renderer = renderer
 	}
 }
 
-// WithHTTPErrorHandler allows to override default mux global error handler
+// WithHTTPErrorHandler allows to override default mux global error handler.
 func WithHTTPErrorHandler(handler HTTPErrorHandler) Option {
 	return func(o *options) {
 		o.httpErrorHandler = handler
@@ -228,7 +229,7 @@ func NewServeMux(opt ...Option) (e *Mux) {
 		renderer: opts.renderer,
 	}
 
-	// http error handler must be set after mux instance
+	// http error handler must be set after mux instance.
 	if opts.httpErrorHandler != nil {
 		e.httpErrorHandler = opts.httpErrorHandler
 	} else {
@@ -500,4 +501,19 @@ func handlerName(h HandlerFunc) string {
 		return runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
 	}
 	return t.String()
+}
+
+// NewDefaultTemplateRenderer creates default template renderer with given pattern.
+func NewDefaultTemplateRenderer(pattern string) *templateRenderer {
+	return &templateRenderer{
+		templates: template.Must(template.ParseGlob(pattern)),
+	}
+}
+
+type templateRenderer struct {
+	templates *template.Template
+}
+
+func (t *templateRenderer) Render(w io.Writer, name string, data interface{}, c Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
 }
