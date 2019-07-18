@@ -47,8 +47,8 @@ type hello struct {
 func main() {
 	mux := route.NewServeMux()
 	
-	mux.GET("/", func (ctx route.Context) error {
-	    return ctx.JSON(http.StatusOK, &hello{Title:"Hello, World!"})
+	mux.GET("/", func (c route.Context) error {
+	    return c.JSON(http.StatusOK, &hello{Title:"Hello, World!"})
 	})
 	
 	log.Fatal(http.ListenAndServe(":9000", mux))

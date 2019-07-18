@@ -380,7 +380,7 @@ func (mux *Mux) Add(method, path string, handler HandlerFunc, middleware ...Midd
 		h := handler
 		// Chain middleware
 		for i := len(middleware) - 1; i >= 0; i-- {
-			h = middleware[i](h)
+			h = compose(h, middleware[i])
 		}
 		return h(c)
 	})
@@ -395,7 +395,7 @@ func (mux *Mux) Add(method, path string, handler HandlerFunc, middleware ...Midd
 
 // Group creates a new router group with prefix and optional group-level middleware.
 func (mux *Mux) Group(prefix string, m ...MiddlewareFunc) (g *Group) {
-	g = &Group{prefix: prefix, nio: mux}
+	g = &Group{prefix: prefix, mux: mux}
 	g.Use(m...)
 	return
 }
@@ -421,19 +421,19 @@ func (mux *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		mux.router.find(r.Method, getPath(r), c)
 		h = c.Handler()
 		for i := len(mux.middleware) - 1; i >= 0; i-- {
-			h = mux.middleware[i](h)
+			h = compose(h, mux.middleware[i])
 		}
 	} else {
 		h = func(c Context) error {
 			mux.router.find(r.Method, getPath(r), c)
 			h := c.Handler()
 			for i := len(mux.middleware) - 1; i >= 0; i-- {
-				h = mux.middleware[i](h)
+				h = compose(h, mux.middleware[i])
 			}
 			return h(c)
 		}
 		for i := len(mux.premiddleware) - 1; i >= 0; i-- {
-			h = mux.premiddleware[i](h)
+			h = compose(h, mux.premiddleware[i])
 		}
 	}
 

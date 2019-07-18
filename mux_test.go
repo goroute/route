@@ -34,44 +34,44 @@ const userJSONPretty = `{
 }`
 
 func TestMux(t *testing.T) {
-	e := NewServeMux()
+	mux := NewServeMux()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	c := mux.NewContext(req, rec)
 
-	e.defaultHTTPErrorHandler(errors.New("error"), c)
+	mux.defaultHTTPErrorHandler(errors.New("error"), c)
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 }
 
 func TestMuxStatic(t *testing.T) {
-	e := NewServeMux()
+	mux := NewServeMux()
 
 	assert := assert.New(t)
 
 	// OK
-	e.Static("/images", "testdata/images")
-	c, b := request(http.MethodGet, "/images/walle.png", e)
+	mux.Static("/images", "testdata/images")
+	c, b := request(http.MethodGet, "/images/walle.png", mux)
 	assert.Equal(http.StatusOK, c)
 	assert.NotEmpty(b)
 
 	// No file
-	e.Static("/images", "testdata/scripts")
-	c, _ = request(http.MethodGet, "/images/bolt.png", e)
+	mux.Static("/images", "testdata/scripts")
+	c, _ = request(http.MethodGet, "/images/bolt.png", mux)
 	assert.Equal(http.StatusNotFound, c)
 
 	// Directory
-	e.Static("/images", "testdata/images")
-	c, _ = request(http.MethodGet, "/images", e)
+	mux.Static("/images", "testdata/images")
+	c, _ = request(http.MethodGet, "/images", mux)
 	assert.Equal(http.StatusNotFound, c)
 
 	// Directory with index.html
-	e.Static("/", "testdata")
-	c, r := request(http.MethodGet, "/", e)
+	mux.Static("/", "testdata")
+	c, r := request(http.MethodGet, "/", mux)
 	assert.Equal(http.StatusOK, c)
 	assert.Equal(true, strings.HasPrefix(r, "<!doctype html>"))
 
 	// Sub-directory with index.html
-	c, r = request(http.MethodGet, "/folder", e)
+	c, r = request(http.MethodGet, "/folder", mux)
 	assert.Equal(http.StatusOK, c)
 	assert.Equal(true, strings.HasPrefix(r, "<!doctype html>"))
 }
@@ -82,99 +82,106 @@ func TestMuxWithOptions(t *testing.T) {
 	mockHTTPErrorHandler := func(error, Context) {
 	}
 
-	e := NewServeMux(
+	mux := NewServeMux(
 		WithBinder(binder),
 		WithRenderer(renderer),
 		WithHTTPErrorHandler(mockHTTPErrorHandler),
 	)
 
-	assert.Equal(t, binder, e.binder)
-	assert.Equal(t, renderer, e.renderer)
-	assert.NotNil(t, e.httpErrorHandler)
+	assert.Equal(t, binder, mux.binder)
+	assert.Equal(t, renderer, mux.renderer)
+	assert.NotNil(t, mux.httpErrorHandler)
 }
 
 func TestMuxFile(t *testing.T) {
-	e := NewServeMux()
-	e.File("/walle", "testdata/images/walle.png")
-	c, b := request(http.MethodGet, "/walle", e)
+	mux := NewServeMux()
+	mux.File("/walle", "testdata/images/walle.png")
+	c, b := request(http.MethodGet, "/walle", mux)
 	assert.Equal(t, http.StatusOK, c)
 	assert.NotEmpty(t, b)
 }
 
 func TestMuxMiddleware(t *testing.T) {
-	e := NewServeMux()
+	mux := NewServeMux()
 	buf := new(bytes.Buffer)
 
-	e.Pre(func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			assert.Empty(t, c.Path())
-			buf.WriteString("-1")
-			return next(c)
-		}
+	mux.Pre(func(c Context, next HandlerFunc) error {
+		assert.Empty(t, c.Path())
+		buf.WriteString("-1")
+		return next(c)
 	})
 
-	e.Use(func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			buf.WriteString("1")
-			return next(c)
-		}
+	mux.Use(func(c Context, next HandlerFunc) error {
+		buf.WriteString("1")
+		return next(c)
 	})
 
-	e.Use(func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			buf.WriteString("2")
-			return next(c)
-		}
+	mux.Use(func(c Context, next HandlerFunc) error {
+		buf.WriteString("2")
+		return next(c)
 	})
 
-	e.Use(func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			buf.WriteString("3")
-			return next(c)
-		}
+	mux.Use(func(c Context, next HandlerFunc) error {
+		buf.WriteString("3")
+		return next(c)
 	})
 
 	// Route
-	e.GET("/", func(c Context) error {
+	mux.GET("/", func(c Context) error {
 		return c.String(http.StatusOK, "OK")
 	})
 
-	c, b := request(http.MethodGet, "/", e)
+	c, b := request(http.MethodGet, "/", mux)
+
 	assert.Equal(t, "-1123", buf.String())
 	assert.Equal(t, http.StatusOK, c)
 	assert.Equal(t, "OK", b)
 }
 
 func TestMuxMiddlewareError(t *testing.T) {
-	e := NewServeMux()
-	e.Use(func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			return errors.New("error")
-		}
+	mux := NewServeMux()
+	buf := new(bytes.Buffer)
+
+	mux.Use(func(c Context, next HandlerFunc) error {
+		buf.WriteString("1")
+		return next(c)
 	})
-	e.GET("/", NotFoundHandler)
-	c, _ := request(http.MethodGet, "/", e)
+
+	mux.Use(func(c Context, next HandlerFunc) error {
+		buf.WriteString("2")
+		return errors.New("error")
+	})
+
+	mux.Use(func(c Context, next HandlerFunc) error {
+		buf.WriteString("3")
+		return next(c)
+	})
+
+	mux.GET("/", NotFoundHandler)
+	c, _ := request(http.MethodGet, "/", mux)
+
+	assert.Equal(t, "12", buf.String())
 	assert.Equal(t, http.StatusInternalServerError, c)
 }
 
 func TestMuxHandler(t *testing.T) {
-	e := NewServeMux()
+	mux := NewServeMux()
 
 	// HandlerFunc
-	e.GET("/ok", func(c Context) error {
+	mux.GET("/ok", func(c Context) error {
 		return c.String(http.StatusOK, "OK")
 	})
 
-	c, b := request(http.MethodGet, "/ok", e)
+	c, b := request(http.MethodGet, "/ok", mux)
 	assert.Equal(t, http.StatusOK, c)
 	assert.Equal(t, "OK", b)
 }
 
 func TestMuxWrapHandler(t *testing.T) {
-	e := NewServeMux()
+	mux := NewServeMux()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	c := mux.NewContext(req, rec)
 	h := WrapHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("test"))
@@ -186,66 +193,66 @@ func TestMuxWrapHandler(t *testing.T) {
 }
 
 func TestMuxConnect(t *testing.T) {
-	e := NewServeMux()
-	testMethod(t, http.MethodConnect, "/", e)
+	mux := NewServeMux()
+	testMethod(t, http.MethodConnect, "/", mux)
 }
 
 func TestMuxDelete(t *testing.T) {
-	e := NewServeMux()
-	testMethod(t, http.MethodDelete, "/", e)
+	mux := NewServeMux()
+	testMethod(t, http.MethodDelete, "/", mux)
 }
 
 func TestMuxGet(t *testing.T) {
-	e := NewServeMux()
-	testMethod(t, http.MethodGet, "/", e)
+	mux := NewServeMux()
+	testMethod(t, http.MethodGet, "/", mux)
 }
 
 func TestMuxHead(t *testing.T) {
-	e := NewServeMux()
-	testMethod(t, http.MethodHead, "/", e)
+	mux := NewServeMux()
+	testMethod(t, http.MethodHead, "/", mux)
 }
 
 func TestMuxOptions(t *testing.T) {
-	e := NewServeMux()
-	testMethod(t, http.MethodOptions, "/", e)
+	mux := NewServeMux()
+	testMethod(t, http.MethodOptions, "/", mux)
 }
 
 func TestMuxPatch(t *testing.T) {
-	e := NewServeMux()
-	testMethod(t, http.MethodPatch, "/", e)
+	mux := NewServeMux()
+	testMethod(t, http.MethodPatch, "/", mux)
 }
 
 func TestMuxPost(t *testing.T) {
-	e := NewServeMux()
-	testMethod(t, http.MethodPost, "/", e)
+	mux := NewServeMux()
+	testMethod(t, http.MethodPost, "/", mux)
 }
 
 func TestMuxPut(t *testing.T) {
-	e := NewServeMux()
-	testMethod(t, http.MethodPut, "/", e)
+	mux := NewServeMux()
+	testMethod(t, http.MethodPut, "/", mux)
 }
 
 func TestMuxTrace(t *testing.T) {
-	e := NewServeMux()
-	testMethod(t, http.MethodTrace, "/", e)
+	mux := NewServeMux()
+	testMethod(t, http.MethodTrace, "/", mux)
 }
 
 func TestMuxAny(t *testing.T) { // JFC
-	e := NewServeMux()
-	e.Any("/", func(c Context) error {
+	mux := NewServeMux()
+	mux.Any("/", func(c Context) error {
 		return c.String(http.StatusOK, "Any")
 	})
 }
 
 func TestMuxMatch(t *testing.T) { // JFC
-	e := NewServeMux()
-	e.Match([]string{http.MethodGet, http.MethodPost}, "/", func(c Context) error {
+	mux := NewServeMux()
+	mux.Match([]string{http.MethodGet, http.MethodPost}, "/", func(c Context) error {
 		return c.String(http.StatusOK, "Match")
 	})
 }
 
 func TestMuxRoutes(t *testing.T) {
-	e := NewServeMux()
+	mux := NewServeMux()
 	routes := []*Route{
 		{http.MethodGet, "/users/:user/events", ""},
 		{http.MethodGet, "/users/:user/events/public", ""},
@@ -253,13 +260,13 @@ func TestMuxRoutes(t *testing.T) {
 		{http.MethodPost, "/repos/:owner/:repo/git/tags", ""},
 	}
 	for _, r := range routes {
-		e.Add(r.Method, r.Path, func(c Context) error {
+		mux.Add(r.Method, r.Path, func(c Context) error {
 			return c.String(http.StatusOK, "OK")
 		})
 	}
 
-	if assert.Equal(t, len(routes), len(e.Routes())) {
-		for _, r := range e.Routes() {
+	if assert.Equal(t, len(routes), len(mux.Routes())) {
+		for _, r := range mux.Routes() {
 			found := false
 			for _, rr := range routes {
 				if r.Method == rr.Method && r.Path == rr.Path {
@@ -275,24 +282,22 @@ func TestMuxRoutes(t *testing.T) {
 }
 
 func TestMuxEncodedPath(t *testing.T) {
-	e := NewServeMux()
-	e.GET("/:id", func(c Context) error {
+	mux := NewServeMux()
+	mux.GET("/:id", func(c Context) error {
 		return c.NoContent(http.StatusOK)
 	})
 	req := httptest.NewRequest(http.MethodGet, "/with%2Fslash", nil)
 	rec := httptest.NewRecorder()
-	e.ServeHTTP(rec, req)
+	mux.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
 }
 
 func TestMuxGroup(t *testing.T) {
-	e := NewServeMux()
+	mux := NewServeMux()
 	buf := new(bytes.Buffer)
-	e.Use(MiddlewareFunc(func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			buf.WriteString("0")
-			return next(c)
-		}
+	mux.Use(MiddlewareFunc(func(c Context, next HandlerFunc) error {
+		buf.WriteString("0")
+		return next(c)
 	}))
 	h := func(c Context) error {
 		return c.NoContent(http.StatusOK)
@@ -302,86 +307,80 @@ func TestMuxGroup(t *testing.T) {
 	// Routes
 	//--------
 
-	e.GET("/users", h)
+	mux.GET("/users", h)
 
 	// Group
-	g1 := e.Group("/group1")
-	g1.Use(func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			buf.WriteString("1")
-			return next(c)
-		}
+	g1 := mux.Group("/group1")
+	g1.Use(func(c Context, next HandlerFunc) error {
+		buf.WriteString("1")
+		return next(c)
 	})
 	g1.GET("", h)
 
 	// Nested groups with middleware
-	g2 := e.Group("/group2")
-	g2.Use(func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			buf.WriteString("2")
-			return next(c)
-		}
+	g2 := mux.Group("/group2")
+	g2.Use(func(c Context, next HandlerFunc) error {
+		buf.WriteString("2")
+		return next(c)
 	})
 	g3 := g2.Group("/group3")
-	g3.Use(func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			buf.WriteString("3")
-			return next(c)
-		}
+	g3.Use(func(c Context, next HandlerFunc) error {
+		buf.WriteString("3")
+		return next(c)
 	})
 	g3.GET("", h)
 
-	request(http.MethodGet, "/users", e)
+	request(http.MethodGet, "/users", mux)
 	assert.Equal(t, "0", buf.String())
 
 	buf.Reset()
-	request(http.MethodGet, "/group1", e)
+	request(http.MethodGet, "/group1", mux)
 	assert.Equal(t, "01", buf.String())
 
 	buf.Reset()
-	request(http.MethodGet, "/group2/group3", e)
+	request(http.MethodGet, "/group2/group3", mux)
 	assert.Equal(t, "023", buf.String())
 }
 
 func TestMuxNotFound(t *testing.T) {
-	e := NewServeMux()
+	mux := NewServeMux()
 	req := httptest.NewRequest(http.MethodGet, "/files", nil)
 	rec := httptest.NewRecorder()
-	e.ServeHTTP(rec, req)
+	mux.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusNotFound, rec.Code)
 }
 
 func TestMuxMethodNotAllowed(t *testing.T) {
-	e := NewServeMux()
-	e.GET("/", func(c Context) error {
+	mux := NewServeMux()
+	mux.GET("/", func(c Context) error {
 		return c.String(http.StatusOK, "Mux!")
 	})
 	req := httptest.NewRequest(http.MethodPost, "/", nil)
 	rec := httptest.NewRecorder()
-	e.ServeHTTP(rec, req)
+	mux.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 }
 
 func TestMuxContext(t *testing.T) {
-	e := NewServeMux()
-	c := e.pool.Get().(*context)
+	mux := NewServeMux()
+	c := mux.pool.Get().(*context)
 	assert.IsType(t, new(context), c)
-	e.pool.Put(c)
+	mux.pool.Put(c)
 }
 
 func TestMuxStart(t *testing.T) {
-	e := NewServeMux()
+	mux := NewServeMux()
 	go func() {
-		err := http.ListenAndServe(":0", e)
+		err := http.ListenAndServe(":0", mux)
 		assert.NoError(t, err)
 	}()
 	time.Sleep(200 * time.Millisecond)
 }
 
 func TestMuxStartTLS(t *testing.T) {
-	e := NewServeMux()
+	mux := NewServeMux()
 	go func() {
-		err := http.ListenAndServeTLS(":0", "testdata/certs/cert.pem", "testdata/certs/key.pem", e)
+		err := http.ListenAndServeTLS(":0", "testdata/certs/cert.pem", "testdata/certs/key.pem", mux)
 		// Prevent the test to fail after closing the servers
 		if err != http.ErrServerClosed {
 			assert.NoError(t, err)
