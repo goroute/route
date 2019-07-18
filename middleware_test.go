@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNioWrapMiddleware(t *testing.T) {
+func TestWrapMiddleware(t *testing.T) {
 	e := NewServeMux()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
@@ -21,12 +21,21 @@ func TestNioWrapMiddleware(t *testing.T) {
 			h.ServeHTTP(w, r)
 		})
 	})
-	h := mw(func(c Context) error {
+
+	h := func(c Context) error {
 		return c.String(http.StatusOK, "OK")
-	})
-	if assert.NoError(t, h(c)) {
+	}
+
+	err := mw(c, h)
+	if assert.NoError(t, err) {
 		assert.Equal(t, "mw", buf.String())
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, "OK", rec.Body.String())
 	}
+}
+
+func TestDefaultSkipper(t *testing.T) {
+	skipper := DefaultSkipper(nil)
+
+	assert.Equal(t, false, skipper)
 }

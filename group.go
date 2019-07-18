@@ -5,16 +5,14 @@ import (
 	"path"
 )
 
-type (
-	// Group is a set of sub-routes for a specified route. It can be used for inner
-	// routes that share a common middleware or functionality that should be separate
-	// from the parent mux instance while still inheriting from it.
-	Group struct {
-		prefix     string
-		middleware []MiddlewareFunc
-		nio        *Mux
-	}
-)
+// Group is a set of sub-routes for a specified route. It can be used for inner
+// routes that share a common middleware or functionality that should be separate
+// from the parent mux instance while still inheriting from it.
+type Group struct {
+	prefix     string
+	middleware []MiddlewareFunc
+	mux        *Mux
+}
 
 // Use implements `Mux#Use()` for sub-routes within the Group.
 func (g *Group) Use(middleware ...MiddlewareFunc) {
@@ -22,7 +20,7 @@ func (g *Group) Use(middleware ...MiddlewareFunc) {
 	// Allow all requests to reach the group as they might get dropped if router
 	// doesn't find a match, making none of the group middleware process.
 	for _, p := range []string{"", "/*"} {
-		g.nio.Any(path.Clean(g.prefix+p), func(c Context) error {
+		g.mux.Any(path.Clean(g.prefix+p), func(c Context) error {
 			return NotFoundHandler(c)
 		}, g.middleware...)
 	}
@@ -96,7 +94,7 @@ func (g *Group) Group(prefix string, middleware ...MiddlewareFunc) *Group {
 	m := make([]MiddlewareFunc, 0, len(g.middleware)+len(middleware))
 	m = append(m, g.middleware...)
 	m = append(m, middleware...)
-	return g.nio.Group(g.prefix+prefix, m...)
+	return g.mux.Group(g.prefix+prefix, m...)
 }
 
 // Static implements `Mux#Static()` for sub-routes within the Group.
@@ -106,7 +104,7 @@ func (g *Group) Static(prefix, root string) {
 
 // File implements `Mux#File()` for sub-routes within the Group.
 func (g *Group) File(path, file string) {
-	g.nio.File(g.prefix+path, file)
+	g.mux.File(g.prefix+path, file)
 }
 
 // Add implements `Mux#Add()` for sub-routes within the Group.
@@ -117,5 +115,5 @@ func (g *Group) Add(method, path string, handler HandlerFunc, middleware ...Midd
 	m := make([]MiddlewareFunc, 0, len(g.middleware)+len(middleware))
 	m = append(m, g.middleware...)
 	m = append(m, middleware...)
-	return g.nio.Add(method, g.prefix+path, handler, m...)
+	return g.mux.Add(method, g.prefix+path, handler, m...)
 }

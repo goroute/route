@@ -31,30 +31,20 @@ func TestGroupRouteMiddleware(t *testing.T) {
 	e := NewServeMux()
 	g := e.Group("/group")
 	h := func(Context) error { return nil }
-	m1 := func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			return next(c)
-		}
+	m1 := func(c Context, next HandlerFunc) error {
+		return next(c)
 	}
-	m2 := func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			return next(c)
-		}
+	m2 := func(c Context, next HandlerFunc) error {
+		return next(c)
 	}
-	m3 := func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			return next(c)
-		}
+	m3 := func(c Context, next HandlerFunc) error {
+		return next(c)
 	}
-	m4 := func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			return c.NoContent(404)
-		}
+	m4 := func(c Context, next HandlerFunc) error {
+		return c.NoContent(404)
 	}
-	m5 := func(next HandlerFunc) HandlerFunc {
-		return func(c Context) error {
-			return c.NoContent(405)
-		}
+	m5 := func(c Context, next HandlerFunc) error {
+		return c.NoContent(405)
 	}
 	g.Use(m1, m2, m3)
 	g.GET("/404", h, m4)
