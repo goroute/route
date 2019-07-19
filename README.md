@@ -40,15 +40,20 @@ import (
     "github.com/goroute/route"
 )
 
-type hello struct {
-	Title string
+type helloResponse struct {
+	Title string `json:"title"`
 }
 
 func main() {
 	mux := route.NewServeMux()
 	
-	mux.GET("/", func (c route.Context) error {
-	    return c.JSON(http.StatusOK, &hello{Title:"Hello, World!"})
+	mux.Use(func(c route.Context, next route.HandlerFunc) error {
+	    log.Println("Hello, Middleware!")
+	    return next(c)
+	})
+	
+	mux.GET("/", func(c route.Context) error {
+	    return c.JSON(http.StatusOK, &helloResponse{Title:"Hello, JSON!"})
 	})
 	
 	log.Fatal(http.ListenAndServe(":9000", mux))
