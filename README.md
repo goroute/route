@@ -7,12 +7,11 @@
 
 </div>
 
-## Main features
+## Few main features
 
 * Minimal core.
-* No external runtime dependencies. Custom middlewares which requires 3th party dependecies are places separates repositories under goroute org.
-* HTTP Routing with GET, POST, PUT, DELETE, PATH builtins.
-* Data binding for JSON body payload.
+* No external runtime dependencies. Custom middlewares which requires 3th party dependecies are places in separates repositories under goroute org.
+* HTTP Routing.
 * Middlewares support.
 * Global error handling.
 * "Correct" handler func signature.
@@ -115,6 +114,12 @@ Goroute github.com organization is structured in a way that each custom middlewa
 You may notice that there is a trend for go web frameworks developers to advertise how their frameworks are faster than others and they are playing hello world benchmark battles. What does it mean to have high performance? In real world services your web api endpoint is probably going to call database which will bottleneck first. If not then simply scale horizontally and you are good to go. If you really have a huge load since you working on ads serving etc. then even standard underlying go http primitives are not going to help and you are probably already switched to some custom http/tcp implementations or already using Rust.
 
 Goroute tries to be minimal and uses standard go http server by implementing ServeHTTP interface. There are some simple optimizations like sync.Pool for having less allocations but nothing that feels hacky or over-engineered.
+
+### 4. Overengineering
+
+Session control, dependency injection, caching, logging, configuration parsing, automatic HTTPS, performance supervising, context handling, ORM supporting, requests simulating, Webassembly, MVC, sessions, caching, Websocket.
+
+If you need all these features in one place then visit [beego](https://github.com/astaxie/beego) or [iris](github.com/kataras/iris) and you are well covered. Well.. maybe not. I was surprised when I saw that beego has builtin orm for SQL and popular databases like MySQL, Postgres etc. If you writing boring CRUD you may want to us ORM for sure, but there are event better packages for that like [gorm](https://github.com/jinzhu/gorm). For one it may sound awesome but it really isn't. What if I'm using NoSQL database like MongoDB or googles DataStore? When I don't need traditional ORM at all.
 
 
 ## Getting Started
