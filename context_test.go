@@ -47,14 +47,14 @@ func TestContext(t *testing.T) {
 	tmpl := &Template{
 		templates: template.Must(template.New("hello").Parse("Hello, {{.}}!")),
 	}
-	c.mux.renderer = tmpl
+	c.mux.Renderer = tmpl
 	err := c.Render(http.StatusOK, "hello", "Jon Snow")
 	if assert.NoError(err) {
 		assert.Equal(http.StatusOK, rec.Code)
 		assert.Equal("Hello, Jon Snow!", rec.Body.String())
 	}
 
-	c.mux.renderer = nil
+	c.mux.Renderer = nil
 	err = c.Render(http.StatusOK, "hello", "Jon Snow")
 	assert.Error(err)
 

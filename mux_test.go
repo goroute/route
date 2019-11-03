@@ -88,9 +88,9 @@ func TestMuxWithOptions(t *testing.T) {
 		WithHTTPErrorHandler(mockHTTPErrorHandler),
 	)
 
-	assert.Equal(t, binder, mux.binder)
-	assert.Equal(t, renderer, mux.renderer)
-	assert.NotNil(t, mux.httpErrorHandler)
+	assert.Equal(t, binder, mux.Binder)
+	assert.Equal(t, renderer, mux.Renderer)
+	assert.NotNil(t, mux.HTTPErrorHandler)
 }
 
 func TestMuxFile(t *testing.T) {

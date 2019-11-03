@@ -18,16 +18,17 @@ import (
 type (
 	// Mux is the top-level framework instance.
 	Mux struct {
-		premiddleware    []MiddlewareFunc
-		middleware       []MiddlewareFunc
-		maxParam         *int
-		router           *router
-		notFoundHandler  HandlerFunc
-		pool             sync.Pool
+		premiddleware   []MiddlewareFunc
+		middleware      []MiddlewareFunc
+		maxParam        *int
+		router          *router
+		notFoundHandler HandlerFunc
+		pool            sync.Pool
+
 		Debug            bool
-		httpErrorHandler HTTPErrorHandler
-		binder           Binder
-		renderer         Renderer
+		HTTPErrorHandler HTTPErrorHandler
+		Binder           Binder
+		Renderer         Renderer
 	}
 
 	// Route contains a handler and information for matching against requests.
@@ -167,7 +168,7 @@ var (
 	ErrRequestTimeout              = NewHTTPError(http.StatusRequestTimeout)
 	ErrServiceUnavailable          = NewHTTPError(http.StatusServiceUnavailable)
 	ErrValidatorNotRegistered      = errors.New("validator not registered")
-	ErrRendererNotRegistered       = errors.New("renderer not registered")
+	ErrRendererNotRegistered       = errors.New("Renderer not registered")
 	ErrInvalidRedirectCode         = errors.New("invalid redirect status code")
 	ErrCookieNotFound              = errors.New("cookie not found")
 )
@@ -192,14 +193,14 @@ type options struct {
 // A Option sets options such as credentials, tls, etc.
 type Option func(*options)
 
-// WithBinder allows to override default mux binder.
+// WithBinder allows to override default mux Binder.
 func WithBinder(binder Binder) Option {
 	return func(o *options) {
 		o.binder = binder
 	}
 }
 
-// WithRenderer allows to register mux view renderer.
+// WithRenderer allows to register mux view Renderer.
 func WithRenderer(renderer Renderer) Option {
 	return func(o *options) {
 		o.renderer = renderer
@@ -225,15 +226,15 @@ func NewServeMux(opt ...Option) (e *Mux) {
 
 	e = &Mux{
 		maxParam: new(int),
-		binder:   opts.binder,
-		renderer: opts.renderer,
+		Binder:   opts.binder,
+		Renderer: opts.renderer,
 	}
 
 	// http error handler must be set after mux instance.
 	if opts.httpErrorHandler != nil {
-		e.httpErrorHandler = opts.httpErrorHandler
+		e.HTTPErrorHandler = opts.httpErrorHandler
 	} else {
-		e.httpErrorHandler = e.defaultHTTPErrorHandler
+		e.HTTPErrorHandler = e.defaultHTTPErrorHandler
 	}
 
 	e.pool.New = func() interface{} {
@@ -439,7 +440,7 @@ func (mux *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Execute chain
 	if err := h(c); err != nil {
-		mux.httpErrorHandler(err, c)
+		mux.HTTPErrorHandler(err, c)
 	}
 
 	// Release context
@@ -503,7 +504,7 @@ func handlerName(h HandlerFunc) string {
 	return t.String()
 }
 
-// NewDefaultTemplateRenderer creates default template renderer with given pattern.
+// NewDefaultTemplateRenderer creates default template Renderer with given pattern.
 func NewDefaultTemplateRenderer(pattern string) *templateRenderer {
 	return &templateRenderer{
 		templates: template.Must(template.ParseGlob(pattern)),

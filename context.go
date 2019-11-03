@@ -83,7 +83,7 @@ type (
 		// Set saves data in the context.
 		Set(key string, val interface{})
 
-		// Bind binds the request body into provided type `i`. The default binder
+		// Bind binds the request body into provided type `i`. The default Binder
 		// does it based on Content-Type header.
 		Bind(i interface{}) error
 
@@ -276,15 +276,15 @@ func (c *context) Set(key string, val interface{}) {
 }
 
 func (c *context) Bind(i interface{}) error {
-	return c.mux.binder.Bind(i, c)
+	return c.mux.Binder.Bind(i, c)
 }
 
 func (c *context) Render(code int, name string, data interface{}) (err error) {
-	if c.mux.renderer == nil {
+	if c.mux.Renderer == nil {
 		return ErrRendererNotRegistered
 	}
 	buf := new(bytes.Buffer)
-	if err = c.mux.renderer.Render(buf, name, data, c); err != nil {
+	if err = c.mux.Renderer.Render(buf, name, data, c); err != nil {
 		return
 	}
 	return c.HTMLBlob(code, buf.Bytes())
@@ -391,7 +391,7 @@ func (c *context) Redirect(code int, url string) error {
 }
 
 func (c *context) Error(err error) {
-	c.mux.httpErrorHandler(err, c)
+	c.mux.HTTPErrorHandler(err, c)
 }
 
 func (c *context) Handler() HandlerFunc {
